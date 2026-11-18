@@ -14,6 +14,8 @@ python3 -B -S demo.py
 
 演示从 `examples/day.json` 读取白班规程，再从 `examples/correction.json` 登记更正。它将两套成果写入临时归档，关闭并移开源数据库，从重开归档核对旧路线、旧报告和回执。测试与演示结束时清理各自的临时目录。样例从 A 工位开工，在 `1/4` 比例下两条原路线概率分别为 `1/8` 和 `1/32`。旧报告的完全关闭列为 `(1, 0)`，微量放行列为 `(0, 1)`，均按 `(A, B)` 顺序。
 
+演示另外登记同一固定计划上的两份循环日程（`ABA` 与 `ABB`），断源后在重开归档中分别签发、再按报告号领取。两份日程都以回到 A 收尾，但整轮占用分别为 `(2/3, 1/3)` 与 `(1/3, 2/3)`，说明轮内占用不能只看整轮端点。
+
 ## 计算约定
 
 - 工位名称和路线编号为非空白字符串，各自在一次修订内唯一。输入工位、开工分布和路线使用有序集合。工位可以使用字符串或 `routing.stations.Station`，路线使用 `routing.routes.RouteRule`。开工分布按工位位置提供，非负且合计为一。
@@ -30,6 +32,11 @@ python3 -B -S demo.py
 | `plan.audit.audit_plan(archive, plan_id, ratio)` | `AuditResult`，包含原工位、逐路线 `RouteAuditRow` 与逐工位留驻余量 |
 | `publication.issue.issue_report(archive, plan_id)` | 同次提交的 `(OccupationReport, IssueReceipt)` |
 | `publication.read.read_report(archive, report_id)` | 原样读回 `(OccupationReport, IssueReceipt)` |
+| `plan.freeze.freeze_schedule(archive, plan_id, stages)` | 绑定固定计划的日程号 `str` |
+| `publication.issue.issue_schedule_report(archive, schedule_id, *, before_commit=None)` | 同次提交的 `(ScheduleReport, IssueReceipt)` |
+| `publication.read.read_schedule_report(archive, report_id)` | 原样读回 `(ScheduleReport, IssueReceipt)` |
+
+周期日程的登记、占用口径和断源签读细则见 `SCHEDULE.md`。日程按原序保存非空具名阶段，比例沿用 V1 精确规则，步数为非布尔正整数。`ScheduleReport` 按 `report_id`、`schedule_id`、`plan_id`、`stations`、`stages`、`stage_occupations` 和 `round_occupation` 属性交付，所有占用向量按工位原序给出精确 `Fraction`。日程与报告分别归档在 `schedules` 与 `schedule_reports` 等表中，与 V1 的 `plans`/`reports` 互不影响。
 
 调用方用 `routing.revision_store.RevisionStore(path)` 打开源库，用 `archive.catalog.HandoverArchive.open(path)` 打开另一个本地 SQLite 文件。两者支持 `with` 和显式 `close()`。打开时初始化缺失的结构，重复调用 `initialize()` 保留已有数据。登记更正后的整份规程会产生新修订号。冻结快照保留源修订出处、原工位顺序、开工分布、路线身份、基准概率和放行次数。归档分数按规范字符串保存，编号是用于查询的独立身份。
 

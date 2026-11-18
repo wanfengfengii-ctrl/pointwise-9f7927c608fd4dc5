@@ -42,6 +42,27 @@ class HandoverArchive:
                     payload TEXT NOT NULL
                 )
             ''')
+            self.connection.execute('''
+                CREATE TABLE IF NOT EXISTS schedules (
+                    schedule_id TEXT PRIMARY KEY NOT NULL,
+                    plan_id TEXT NOT NULL REFERENCES plans(plan_id),
+                    payload TEXT NOT NULL
+                )
+            ''')
+            self.connection.execute('''
+                CREATE TABLE IF NOT EXISTS schedule_reports (
+                    report_id TEXT PRIMARY KEY NOT NULL,
+                    schedule_id TEXT NOT NULL REFERENCES schedules(schedule_id),
+                    plan_id TEXT NOT NULL REFERENCES plans(plan_id),
+                    payload TEXT NOT NULL
+                )
+            ''')
+            self.connection.execute('''
+                CREATE TABLE IF NOT EXISTS schedule_receipts (
+                    report_id TEXT PRIMARY KEY NOT NULL REFERENCES schedule_reports(report_id),
+                    payload TEXT NOT NULL
+                )
+            ''')
 
     def close(self) -> None:
         self.connection.close()
